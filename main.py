@@ -27,6 +27,7 @@ class SentimentAlgorithm:
         self.lambda3 = lambda3
         self.epsilon = epsilon
 
+    # Read Files from the path given
     def read_files(self, pathPos, pathNeg):
         with open(pathPos, encoding="utf8") as reader:
             for line in reader:
