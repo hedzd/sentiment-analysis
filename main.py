@@ -52,6 +52,7 @@ class SentimentAlgorithm:
         del self.trainSentencesPos[0:num_test_pos]
         del self.trainSentencesNeg[0:num_test_neg]
 
+    # Make a directory
     def make_dict(self, bigram):
         self.posDict['<s>'] = len(self.trainSentencesPos)
         self.posDict['</s>'] = len(self.trainSentencesPos)
