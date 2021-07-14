@@ -3,7 +3,7 @@ import random
 
 
 class SentimentAlgorithm:
-    def __init__(self, pathPos, pathNeg):
+    def __init__(self, pathPos, pathNeg, lambda1, lambda2, lambda3, epsilon):
         self.posDict = {}
         self.negDict = {}
         self.posDictTwoWords = {}
@@ -22,6 +22,10 @@ class SentimentAlgorithm:
         # self.clean_dict()
         self.sumValuesPos = sum(self.posDict.values())
         self.sumValuesNeg = sum(self.negDict.values())
+        self.lambda1 = lambda1
+        self.lambda2 = lambda2
+        self.lambda3 = lambda3
+        self.epsilon = epsilon
 
     def read_files(self, pathPos, pathNeg):
         with open(pathPos, encoding="utf8") as reader:
@@ -111,7 +115,7 @@ class SentimentAlgorithm:
         for i in range(10):
             self.negDict.popitem()
 
-    def calc_pwi(self):
+    def calc_p_wi(self):
         for key, value in self.posDict.items():
             self.posPwi[key] = value/self.sumValuesPos
 
@@ -131,15 +135,36 @@ class SentimentAlgorithm:
                 self.negPpairwords[key] = value/self.negDict[w1]
 
     def train(self):
-        self.calc_pwi()
+        self.calc_p_wi()
         self.calc_p_wordpair()
 
-    def check_comment(self):
-        return True
+    def calc_backoff(self, w1, w2, pos):
+        sum = 0
+        ww = w1 + ' ' + w2
+        if pos:
+            if ww in self.posPpairwords and w2 in self.posPwi:
+                sum += (self.lambda3*self.posPpairwords.get(ww))
+            if w2 in self.posPwi:
+                sum += (self.lambda2*self.posPwi.get(w2))
+        else:
+            if ww in self.negPpairwords and w2 in self.negPwi:
+                sum += (self.lambda3*self.negPpairwords.get(ww))
+            if w2 in self.negPwi:
+                sum += (self.lambda2*self.negPwi.get(w2))
+        sum += (self.lambda1*self.epsilon)
+        return sum
 
-
+    def check_sentence(self, sentence):
+        probability_pos = 1
+        probability_pos *= self.calc_backoff('<s>', sentence[0], True)
+        for i in range(len(sentence)):
+            if i == len(sentence) - 1:
+                probability_pos *= self.calc_backoff(sentence[i], '</s>', True)
+            else:
+                probability_pos *= self.calc_backoff(sentence[i], sentence[i + 1], True)
+    
 if __name__ == '__main__':
-    aiAgent = SentimentAlgorithm('rt-polarity.pos', 'rt-polarity.neg')
+    aiAgent = SentimentAlgorithm('rt-polarity.pos', 'rt-polarity.neg',0.5,0.3,0.2,0.1)
     aiAgent.train()
     print(aiAgent.negPpairwords)
     # print(aiAgent.posDictTwoWords)
