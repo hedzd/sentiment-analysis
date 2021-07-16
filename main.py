@@ -2,30 +2,20 @@ import re
 import random
 
 
-class SentimentAlgorithm:
-    def __init__(self, pathPos, pathNeg, lambda1, lambda2, lambda3, epsilon):
+class Preprocess_data:
+    def __init__(self, pathPos, pathNeg):
         self.posDict = {}
         self.negDict = {}
         self.posDictTwoWords = {}
         self.negDictTwoWords = {}
-        self.posPwi = {}
-        self.negPwi = {}
-        self.posPpairwords = {}
-        self.negPpairwords = {}
         self.trainSentencesPos = []
         self.testSentencesPos = []
         self.trainSentencesNeg = []
         self.testSentencesNeg = []
         self.read_files(pathPos, pathNeg)
         self.split_train_test()
-        self.make_dict(True)
-        # self.clean_dict()
-        self.sumValuesPos = sum(self.posDict.values())
-        self.sumValuesNeg = sum(self.negDict.values())
-        self.lambda1 = lambda1
-        self.lambda2 = lambda2
-        self.lambda3 = lambda3
-        self.epsilon = epsilon
+        self.make_dict()
+        self.clean_dict()
 
     # Read Files from the path given
     def read_files(self, pathPos, pathNeg):
@@ -43,8 +33,8 @@ class SentimentAlgorithm:
                 self.trainSentencesNeg.append(line)
 
     def split_train_test(self):
-        num_test_pos = int(len(self.trainSentencesPos) * 0.1)
-        num_test_neg = int(len(self.trainSentencesNeg) * 0.1)
+        num_test_pos = int(len(self.trainSentencesPos) * 0.01)
+        num_test_neg = int(len(self.trainSentencesNeg) * 0.01)
         random.shuffle(self.trainSentencesPos)
         random.shuffle(self.trainSentencesNeg)
         self.testSentencesPos = self.trainSentencesPos[0:num_test_pos]
@@ -52,10 +42,9 @@ class SentimentAlgorithm:
         del self.trainSentencesPos[0:num_test_pos]
         del self.trainSentencesNeg[0:num_test_neg]
 
-    # Make a directory
-    def make_dict(self, bigram):
-        self.posDict['<s>'] = len(self.trainSentencesPos)
-        self.posDict['</s>'] = len(self.trainSentencesPos)
+    def make_dict(self):
+        # self.posDict['<s>'] = len(self.trainSentencesPos)
+        # self.posDict['</s>'] = len(self.trainSentencesPos)
         for line in self.trainSentencesPos:
             line = line.split()
             # print(line)
@@ -65,23 +54,24 @@ class SentimentAlgorithm:
                     self.posDict[word] = self.posDict.get(word) + 1
                 else:
                     self.posDict[word] = 1
-                if bigram:
-                    if i == len(line) - 1:
-                        twoWords = word + ' </s>'
-                    else:
-                        twoWords = word + ' ' + line[i + 1].strip("'")
 
-                    if twoWords in self.posDictTwoWords:
-                        self.posDictTwoWords[twoWords] = self.posDictTwoWords.get(twoWords) + 1
-                    else:
-                        self.posDictTwoWords[twoWords] = 1
+                if i == len(line) - 1:
+                    twoWords = word + ' </s>'
+                else:
+                    twoWords = word + ' ' + line[i + 1].strip("'")
+
+                if twoWords in self.posDictTwoWords:
+                    self.posDictTwoWords[twoWords] = self.posDictTwoWords.get(twoWords) + 1
+                else:
+                    self.posDictTwoWords[twoWords] = 1
             twoWords = '<s> ' + line[0].strip("'")
             if twoWords in self.posDictTwoWords:
                 self.posDictTwoWords[twoWords] = self.posDictTwoWords.get(twoWords) + 1
             else:
                 self.posDictTwoWords[twoWords] = 1
-        self.negDict['<s>'] = len(self.trainSentencesNeg)
-        self.negDict['</s>'] = len(self.trainSentencesNeg)
+
+        # self.negDict['<s>'] = len(self.trainSentencesNeg)
+        # self.negDict['</s>'] = len(self.trainSentencesNeg)
         for line in self.trainSentencesNeg:
             line = line.split()
             # print(line)
@@ -91,16 +81,16 @@ class SentimentAlgorithm:
                     self.negDict[word] = self.negDict.get(word) + 1
                 else:
                     self.negDict[word] = 1
-                if bigram:
-                    if i == len(line) - 1:
-                        twoWords = word + ' </s>'
-                    else:
-                        twoWords = word + ' ' + line[i + 1].strip("'")
 
-                    if twoWords in self.negDictTwoWords:
-                        self.negDictTwoWords[twoWords] = self.negDictTwoWords.get(twoWords) + 1
-                    else:
-                        self.negDictTwoWords[twoWords] = 1
+                if i == len(line) - 1:
+                    twoWords = word + ' </s>'
+                else:
+                    twoWords = word + ' ' + line[i + 1].strip("'")
+
+                if twoWords in self.negDictTwoWords:
+                    self.negDictTwoWords[twoWords] = self.negDictTwoWords.get(twoWords) + 1
+                else:
+                    self.negDictTwoWords[twoWords] = 1
             twoWords = '<s> ' + line[0].strip("'")
             if twoWords in self.negDictTwoWords:
                 self.negDictTwoWords[twoWords] = self.negDictTwoWords.get(twoWords) + 1
@@ -116,6 +106,29 @@ class SentimentAlgorithm:
         self.negDict = dict(sorted(self.negDict.items(), key=lambda item: item[1]))
         for i in range(10):
             self.negDict.popitem()
+
+
+class SentimentAlgorithm:
+    def __init__(self, data, bigram):
+        self.posDict = data.posDict
+        self.negDict = data.negDict
+        self.posDictTwoWords = data.posDictTwoWords
+        self.negDictTwoWords = data.negDictTwoWords
+        self.posPwi = {}
+        self.negPwi = {}
+        self.posPpairwords = {}
+        self.negPpairwords = {}
+        self.trainSentencesPos = data.trainSentencesPos
+        self.testSentencesPos = data.testSentencesPos
+        self.trainSentencesNeg = data.trainSentencesNeg
+        self.testSentencesNeg = data.testSentencesNeg
+        self.lambda1 = None
+        self.lambda2 = None
+        self.lambda3 = None
+        self.epsilon = None
+        self.sumValuesPos = sum(self.posDict.values())
+        self.sumValuesNeg = sum(self.negDict.values())
+        self.bigram = bigram
 
     def calc_p_wi(self):
         for key, value in self.posDict.items():
@@ -138,19 +151,22 @@ class SentimentAlgorithm:
 
     def train(self):
         self.calc_p_wi()
-        self.calc_p_wordpair()
+        if self.bigram:
+            self.calc_p_wordpair()
 
     def calc_backoff(self, w1, w2, pos):
         sum = 0
         ww = w1 + ' ' + w2
         if pos:
-            if ww in self.posPpairwords and w2 in self.posPwi:
-                sum += (self.lambda3*self.posPpairwords.get(ww))
+            if self.bigram:
+                if ww in self.posPpairwords and w2 in self.posPwi:
+                    sum += (self.lambda3*self.posPpairwords.get(ww))
             if w2 in self.posPwi:
                 sum += (self.lambda2*self.posPwi.get(w2))
         else:
-            if ww in self.negPpairwords and w2 in self.negPwi:
-                sum += (self.lambda3*self.negPpairwords.get(ww))
+            if self.bigram:
+                if ww in self.negPpairwords and w2 in self.negPwi:
+                    sum += (self.lambda3*self.negPpairwords.get(ww))
             if w2 in self.negPwi:
                 sum += (self.lambda2*self.negPwi.get(w2))
         sum += (self.lambda1*self.epsilon)
@@ -164,26 +180,75 @@ class SentimentAlgorithm:
                 probability_pos *= self.calc_backoff(sentence[i], '</s>', True)
             else:
                 probability_pos *= self.calc_backoff(sentence[i], sentence[i + 1], True)
-    
+        probability_neg = 1
+        probability_neg *= self.calc_backoff('<s>', sentence[0], False)
+        for i in range(len(sentence)):
+            if i == len(sentence) - 1:
+                probability_neg *= self.calc_backoff(sentence[i], '</s>', False)
+            else:
+                probability_neg *= self.calc_backoff(sentence[i], sentence[i + 1], False)
+
+        # print(probability_pos)
+        # print(probability_neg)
+        if probability_pos > probability_neg:
+            return True
+        return False
+
+    def set_parameters(self, lambda1, lambda2, lambda3, epsilon):
+        self.lambda1 = lambda1
+        self.lambda2 = lambda2
+        self.lambda3 = lambda3
+        self.epsilon = epsilon
+
+    def set_parameters_unigram(self, lambda1, lambda2, epsilon):
+        self.lambda1 = lambda1
+        self.lambda2 = lambda2
+        self.epsilon = epsilon
+
+    def test_acc(self):
+        numCorrect = 0
+        allNeg = len(self.testSentencesNeg)
+        for negSentence in self.testSentencesNeg:
+            result = self.check_sentence(negSentence)
+            if not result:
+                numCorrect += 1
+
+        allPos = len(self.testSentencesPos)
+        for posSentence in self.testSentencesPos:
+            result = self.check_sentence(posSentence)
+            if result:
+                numCorrect += 1
+
+        percision = (numCorrect/(allPos+allNeg))*100
+
+        print("percision: ", percision)
+
+
 if __name__ == '__main__':
-    aiAgent = SentimentAlgorithm('rt-polarity.pos', 'rt-polarity.neg',0.5,0.3,0.2,0.1)
+    data = Preprocess_data('rt-polarity.pos', 'rt-polarity.neg')
+
+    print("BIGRAM")
+    aiAgent = SentimentAlgorithm(data, True)
     aiAgent.train()
-    print(aiAgent.negPpairwords)
-    # print(aiAgent.posDictTwoWords)
-    # print(aiAgent.posDict)
-    # print(aiAgent.negDict)
+    aiAgent.set_parameters(0.1,0.2,0.7,0.1)
+    aiAgent.test_acc()
 
-    # print(aiAgent.sumValuesPos)
-    # print(aiAgent.sumValuesNeg)
-    # print(aiAgent.posPwi)
-    # print(aiAgent.negPwi)
+    print("UNIGRAM:")
+    aiAgent_unigram = SentimentAlgorithm(data, False)
+    aiAgent_unigram.train()
+    aiAgent_unigram.set_parameters_unigram(0.1, 0.9, 0.1)
+    aiAgent_unigram.test_acc()
 
-    # print(aiAgent.trainSentencesPos)
-    # print(len(aiAgent.trainSentencesPos))
-    # # print(aiAgent.testSentencesPos)
-    # print(len(aiAgent.testSentencesPos))
-    # while True:
-    #     comment = input()
-    #     if comment == '!q':
-    #         break
-    #     # TODO: IMPLEMENT ALGORITHM
+    while True:
+        comment = input()
+        if comment == '!q':
+            break
+        if aiAgent.check_sentence(comment):
+            print("NOT FILTER THIS")
+        else:
+            print("FILTER THIS")
+
+
+
+
+
