@@ -98,14 +98,28 @@ class Preprocess_data:
                 self.negDictTwoWords[twoWords] = 1
 
     def clean_dict(self):
-        self.posDict = {key: val for key, val in self.posDict.items() if val > 2}
-        self.negDict = {key: val for key, val in self.negDict.items() if val > 2}
+        for key in list(self.posDict.keys()):
+            if self.posDict[key] < 2:
+                del self.posDict[key]
+                if key in self.negDict:
+                    del self.negDict[key]
+
+        for key in list(self.negDict.keys()):
+            if self.negDict[key] < 2:
+                del self.negDict[key]
+                if key in self.posDict:
+                    del self.posDict[key]
+
         self.posDict = dict(sorted(self.posDict.items(), key=lambda item: item[1]))
-        for i in range(10):
-            self.posDict.popitem()
+        for i in range(15):
+            item = self.posDict.popitem()
+            if item in self.negDict:
+                del self.negDict[item[0]]
         self.negDict = dict(sorted(self.negDict.items(), key=lambda item: item[1]))
-        for i in range(10):
-            self.negDict.popitem()
+        for i in range(15):
+            item = self.negDict.popitem()
+            if item in self.posDict:
+                del self.posDict[item[0]]
 
 
 class SentimentAlgorithm:
@@ -161,30 +175,38 @@ class SentimentAlgorithm:
             if self.bigram:
                 if ww in self.posPpairwords and w2 in self.posPwi:
                     sum += (self.lambda3*self.posPpairwords.get(ww))
+                    # print("ww: ",sum)
             if w2 in self.posPwi:
                 sum += (self.lambda2*self.posPwi.get(w2))
+                # print("w:", w2,"wi: ", sum)
         else:
             if self.bigram:
                 if ww in self.negPpairwords and w2 in self.negPwi:
                     sum += (self.lambda3*self.negPpairwords.get(ww))
+                    # print("ww: ", ww, "sum:", sum)
             if w2 in self.negPwi:
                 sum += (self.lambda2*self.negPwi.get(w2))
+                # print("w:", w2, "wi: ", sum)
         sum += (self.lambda1*self.epsilon)
+        # print("epsilon: ", sum)
         return sum
 
     def check_sentence(self, sentence):
+        sentence = sentence.split()
         probability_pos = 1
         probability_pos *= self.calc_backoff('<s>', sentence[0], True)
         for i in range(len(sentence)):
             if i == len(sentence) - 1:
-                probability_pos *= self.calc_backoff(sentence[i], '</s>', True)
+                if self.bigram:
+                    probability_pos *= self.calc_backoff(sentence[i], '</s>', True)
             else:
                 probability_pos *= self.calc_backoff(sentence[i], sentence[i + 1], True)
         probability_neg = 1
         probability_neg *= self.calc_backoff('<s>', sentence[0], False)
         for i in range(len(sentence)):
             if i == len(sentence) - 1:
-                probability_neg *= self.calc_backoff(sentence[i], '</s>', False)
+                if self.bigram:
+                    probability_neg *= self.calc_backoff(sentence[i], '</s>', False)
             else:
                 probability_neg *= self.calc_backoff(sentence[i], sentence[i + 1], False)
 
@@ -230,7 +252,7 @@ if __name__ == '__main__':
     print("BIGRAM")
     aiAgent = SentimentAlgorithm(data, True)
     aiAgent.train()
-    aiAgent.set_parameters(0.1,0.2,0.7,0.1)
+    aiAgent.set_parameters(0.1, 0.1, 0.8, 0.1)
     aiAgent.test_acc()
 
     print("UNIGRAM:")
