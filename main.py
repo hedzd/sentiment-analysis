@@ -15,7 +15,7 @@ class Preprocess_data:
         self.read_files(pathPos, pathNeg)
         self.split_train_test()
         self.make_dict()
-        self.clean_dict()
+        # self.clean_dict()
 
     # Read Files from the path given
     def read_files(self, pathPos, pathNeg):
@@ -43,8 +43,8 @@ class Preprocess_data:
         del self.trainSentencesNeg[0:num_test_neg]
 
     def make_dict(self):
-        # self.posDict['<s>'] = len(self.trainSentencesPos)
-        # self.posDict['</s>'] = len(self.trainSentencesPos)
+        self.posDict['<s>'] = len(self.trainSentencesPos)
+        self.posDict['</s>'] = len(self.trainSentencesPos)
         for line in self.trainSentencesPos:
             line = line.split()
             # print(line)
@@ -70,8 +70,8 @@ class Preprocess_data:
             else:
                 self.posDictTwoWords[twoWords] = 1
 
-        # self.negDict['<s>'] = len(self.trainSentencesNeg)
-        # self.negDict['</s>'] = len(self.trainSentencesNeg)
+        self.negDict['<s>'] = len(self.trainSentencesNeg)
+        self.negDict['</s>'] = len(self.trainSentencesNeg)
         for line in self.trainSentencesNeg:
             line = line.split()
             # print(line)
@@ -111,19 +111,21 @@ class Preprocess_data:
                     del self.posDict[key]
 
         self.posDict = dict(sorted(self.posDict.items(), key=lambda item: item[1]))
-        for i in range(15):
+        for i in range(10):
             item = self.posDict.popitem()
             if item in self.negDict:
                 del self.negDict[item[0]]
         self.negDict = dict(sorted(self.negDict.items(), key=lambda item: item[1]))
-        for i in range(15):
+        for i in range(10):
             item = self.negDict.popitem()
             if item in self.posDict:
                 del self.posDict[item[0]]
 
 
 class SentimentAlgorithm:
-    def __init__(self, data, bigram):
+    def __init__(self, data, bigram, clean):
+        if clean:
+            data.clean_dict()
         self.posDict = data.posDict
         self.negDict = data.negDict
         self.posDictTwoWords = data.posDictTwoWords
@@ -193,7 +195,7 @@ class SentimentAlgorithm:
 
     def check_sentence(self, sentence):
         sentence = sentence.split()
-        probability_pos = 1
+        probability_pos = 0.5
         probability_pos *= self.calc_backoff('<s>', sentence[0], True)
         for i in range(len(sentence)):
             if i == len(sentence) - 1:
@@ -201,7 +203,7 @@ class SentimentAlgorithm:
                     probability_pos *= self.calc_backoff(sentence[i], '</s>', True)
             else:
                 probability_pos *= self.calc_backoff(sentence[i], sentence[i + 1], True)
-        probability_neg = 1
+        probability_neg = 0.5
         probability_neg *= self.calc_backoff('<s>', sentence[0], False)
         for i in range(len(sentence)):
             if i == len(sentence) - 1:
@@ -250,25 +252,35 @@ if __name__ == '__main__':
     data = Preprocess_data('rt-polarity.pos', 'rt-polarity.neg')
 
     print("BIGRAM")
-    aiAgent = SentimentAlgorithm(data, True)
+    aiAgent = SentimentAlgorithm(data, True, False)
     aiAgent.train()
-    aiAgent.set_parameters(0.1, 0.1, 0.8, 0.1)
+    aiAgent.set_parameters(0.005, 0.100, 0.895, 0.00001)
     aiAgent.test_acc()
+    print("Clean")
+    aiAgent2 = SentimentAlgorithm(data, True, True)
+    aiAgent2.train()
+    aiAgent2.set_parameters(0.005, 0.100, 0.895, 0.00001)
+    aiAgent2.test_acc()
 
     print("UNIGRAM:")
-    aiAgent_unigram = SentimentAlgorithm(data, False)
+    aiAgent_unigram = SentimentAlgorithm(data, False, False)
     aiAgent_unigram.train()
     aiAgent_unigram.set_parameters_unigram(0.1, 0.9, 0.1)
     aiAgent_unigram.test_acc()
+    print("Clean")
+    aiAgent_unigram2 = SentimentAlgorithm(data, False, True)
+    aiAgent_unigram2.train()
+    aiAgent_unigram2.set_parameters_unigram(0.1, 0.9, 0.1)
+    aiAgent_unigram2.test_acc()
 
-    while True:
-        comment = input()
-        if comment == '!q':
-            break
-        if aiAgent.check_sentence(comment):
-            print("NOT FILTER THIS")
-        else:
-            print("FILTER THIS")
+    # while True:
+    #     comment = input()
+    #     if comment == '!q':
+    #         break
+    #     if aiAgent.check_sentence(comment):
+    #         print("NOT FILTER THIS")
+    #     else:
+    #         print("FILTER THIS")
 
 
 
