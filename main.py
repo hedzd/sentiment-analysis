@@ -17,7 +17,10 @@ class Preprocess_data:
         self.make_dict()
         # self.clean_dict()
 
-    # Read Files from the path given
+    """
+    This function get the path of both positive and negative files.
+    Read both files and store them in an array.
+    """
     def read_files(self, pathPos, pathNeg):
         with open(pathPos, encoding="utf8") as reader:
             for line in reader:
@@ -32,6 +35,10 @@ class Preprocess_data:
                 line = re.sub(r"[\([{})\]]", "", line)
                 self.trainSentencesNeg.append(line)
 
+    """
+        Split the train and test from the given sentences.
+        0.1 * sentences for training and the rest for testing the machine. 
+    """
     def split_train_test(self):
         num_test_pos = int(len(self.trainSentencesPos) * 0.01)
         num_test_neg = int(len(self.trainSentencesNeg) * 0.01)
@@ -42,11 +49,14 @@ class Preprocess_data:
         del self.trainSentencesPos[0:num_test_pos]
         del self.trainSentencesNeg[0:num_test_neg]
 
+    """
+        This function makes a dictionary for positive and negative comments.
+    """
     def make_dict(self):
         self.posDict['<s>'] = len(self.trainSentencesPos)
         self.posDict['</s>'] = len(self.trainSentencesPos)
         for line in self.trainSentencesPos:
-            line = line.split()
+            line = line.split()  # split by space
             # print(line)
             for i, word in enumerate(line):
                 word = word.strip("'")
