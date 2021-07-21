@@ -107,6 +107,9 @@ class Preprocess_data:
             else:
                 self.negDictTwoWords[twoWords] = 1
 
+    """
+       This function delete repetitive words and words that was seen less than two times! 
+    """
     def clean_dict(self):
         for key in list(self.posDict.keys()):
             if self.posDict[key] < 2:
@@ -156,6 +159,9 @@ class SentimentAlgorithm:
         self.sumValuesNeg = sum(self.negDict.values())
         self.bigram = bigram
 
+    """
+       P(wi) = count(wi)/M 
+    """
     def calc_p_wi(self):
         for key, value in self.posDict.items():
             self.posPwi[key] = value/self.sumValuesPos
@@ -163,6 +169,9 @@ class SentimentAlgorithm:
         for key, value in self.negDict.items():
             self.negPwi[key] = value/self.sumValuesNeg
 
+    """
+       P(wi|wi-1) = count(wi-1 wi)/count(wi-1)
+    """
     def calc_p_wordpair(self):
         for key, value in self.posDictTwoWords.items():
             w1 = key.split()[0]
@@ -175,11 +184,20 @@ class SentimentAlgorithm:
                 # print(key+"   "+w1)
                 self.negPpairwords[key] = value/self.negDict[w1]
 
+    """
+       Call the other functions to calculate probabilities of both bigram and unigram  
+    """
     def train(self):
         self.calc_p_wi()
         if self.bigram:
             self.calc_p_wordpair()
 
+    """   
+       𝑃(𝑤1𝑤2…𝑤𝑛−1𝑤𝑛)=𝑃(𝑤1)∗ Π𝑃(𝑤𝑖|𝑤𝑖−1)
+       𝑃(𝑤𝑖|𝑤𝑖−1)= 𝜆3𝑃(𝑤𝑖|𝑤𝑖−1)+ 𝜆2𝑃(𝑤𝑖)+𝜆1𝜖 
+       𝜆3+𝜆2+𝜆1=1 
+       0<𝜖<1
+    """
     def calc_backoff(self, w1, w2, pos):
         sum = 0
         ww = w1 + ' ' + w2
@@ -203,6 +221,11 @@ class SentimentAlgorithm:
         # print("epsilon: ", sum)
         return sum
 
+    """
+       Call the calc_backoff and calculate probability for each language!
+       If the positive probability is more than negative for a sentence then 
+       it returns true else returns false.
+    """
     def check_sentence(self, sentence):
         sentence = sentence.split()
         probability_pos = 0.5
@@ -238,7 +261,10 @@ class SentimentAlgorithm:
         self.lambda1 = lambda1
         self.lambda2 = lambda2
         self.epsilon = epsilon
-
+    """
+       After training the machine, this function will test and
+       calculate the precision.
+    """
     def test_acc(self):
         numCorrect = 0
         allNeg = len(self.testSentencesNeg)
@@ -253,9 +279,9 @@ class SentimentAlgorithm:
             if result:
                 numCorrect += 1
 
-        percision = (numCorrect/(allPos+allNeg))*100
+        precision = (numCorrect/(allPos+allNeg))*100
 
-        print("percision: ", percision)
+        print("precision: ", precision)
 
 
 if __name__ == '__main__':
